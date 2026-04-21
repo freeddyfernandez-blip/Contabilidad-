@@ -1,0 +1,69 @@
+<svg width="512" height="512" viewBox="0 0 512 512" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>TaxPY App Icon</title>
+  <desc>Ícono de TaxPY — aplicación tributaria paraguaya</desc>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A1628"/>
+      <stop offset="100%" style="stop-color:#0D1F3C"/>
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E4A8A"/>
+      <stop offset="100%" style="stop-color:#0D2D5E"/>
+    </linearGradient>
+    <linearGradient id="barGradHigh" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3A7BD5"/>
+      <stop offset="100%" style="stop-color:#1E4A8A"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00E5A0"/>
+      <stop offset="100%" style="stop-color:#00C8E0"/>
+    </linearGradient>
+    <linearGradient id="calcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#162B4D"/>
+      <stop offset="100%" style="stop-color:#0E1F38"/>
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.85"/>
+      <stop offset="100%" style="stop-color:#ffffff"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+    <filter id="glowGreen">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#00E5A0" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#bgGrad)"/>
+  <line x1="0" y1="320" x2="512" y2="320" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.05"/>
+  <line x1="0" y1="280" x2="512" y2="280" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.04"/>
+  <line x1="0" y1="240" x2="512" y2="240" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.03"/>
+  <rect x="92" y="290" width="44" height="62" rx="5" fill="url(#barGrad)" filter="url(#softShadow)"/>
+  <rect x="150" y="258" width="44" height="94" rx="5" fill="url(#barGrad)" filter="url(#softShadow)"/>
+  <rect x="208" y="226" width="44" height="126" rx="5" fill="url(#barGrad)" filter="url(#softShadow)"/>
+  <rect x="266" y="194" width="44" height="158" rx="5" fill="url(#barGradHigh)" filter="url(#softShadow)"/>
+  <rect x="324" y="158" width="44" height="194" rx="5" fill="url(#barGradHigh)" filter="url(#softShadow)"/>
+  <rect x="306" y="200" width="122" height="148" rx="14" fill="url(#calcGrad)" stroke="#1E4A8A" stroke-width="1.5" filter="url(#softShadow)"/>
+  <rect x="318" y="212" width="98" height="36" rx="7" fill="#0A1628" stroke="#1a3a6a" stroke-width="1"/>
+  <rect x="328" y="222" width="60" height="4" rx="2" fill="#00E5A0" opacity="0.7"/>
+  <rect x="396" y="222" width="12" height="4" rx="2" fill="#00E5A0" opacity="0.4"/>
+  <rect x="318" y="258" width="24" height="18" rx="4" fill="#1a3a6a"/>
+  <rect x="349" y="258" width="24" height="18" rx="4" fill="#1a3a6a"/>
+  <rect x="380" y="258" width="24" height="18" rx="4" fill="#1a3a6a"/>
+  <rect x="411" y="258" width="15" height="18" rx="4" fill="#2455a0"/>
+  <rect x="318" y="282" width="24" height="18" rx="4" fill="#1a3a6a"/>
+  <rect x="349" y="282" width="24" height="18" rx="4" fill="#1a3a6a"/>
+  <rect x="380" y="282" width="24" height="18" rx="4" fill="#1a3a6a"/>
+  <rect x="411" y="282" width="15" height="18" rx="4" fill="#2455a0"/>
+  <rect x="318" y="306" width="24" height="18" rx="4" fill="#1a3a6a"/>
+  <rect x="349" y="306" width="24" height="18" rx="4" fill="#1a3a6a"/>
+  <rect x="380" y="306" width="55" height="18" rx="4" fill="#00E5A0" filter="url(#glowGreen)"/>
+  <line x1="395" y1="312" x2="418" y2="312" stroke="#0A1628" stroke-width="2" stroke-linecap="round"/>
+  <line x1="395" y1="318" x2="418" y2="318" stroke="#0A1628" stroke-width="2" stroke-linecap="round"/>
+  <polyline points="92,326 152,290 212,256 282,210 400,128" fill="none" stroke="url(#arrowGrad)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="400,128 382,138 392,152" fill="white" opacity="0.9"/>
+  <line x1="72" y1="378" x2="440" y2="378" stroke="#ffffff" stroke-width="0.8" stroke-opacity="0.12"/>
+  <circle cx="256" cy="378" r="3" fill="#00E5A0" opacity="0.9"/>
+  <text x="97" y="430" font-family="'Arial Black', 'Helvetica Neue', sans-serif" font-weight="900" font-size="82" fill="white" letter-spacing="-3" opacity="0.95">Tax</text>
+  <text x="255" y="430" font-family="'Arial Black', 'Helvetica Neue', sans-serif" font-weight="900" font-size="82" fill="url(#accentGrad)" letter-spacing="-3" filter="url(#glowGreen)">PY</text>
+  <text x="256" y="460" font-family="'Helvetica Neue', Arial, sans-serif" font-size="18" font-weight="400" fill="#ffffff" fill-opacity="0.35" text-anchor="middle" letter-spacing="4">TRIBUTACIÓN INTELIGENTE</text>
+</svg>
