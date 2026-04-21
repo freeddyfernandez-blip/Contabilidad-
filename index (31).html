@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0A0F1E" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TaxPY" />
+  <meta name="description" content="Gestión tributaria automática para Paraguay" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>TaxPY — Tributación Inteligente</title>
+
+  <!-- ═══ SUPABASE CONFIG ═══ -->
+  <!-- Reemplazá los valores con los de tu proyecto Supabase -->
+  <script>
+    const SUPABASE_URL = 'https://TU_PROYECTO.supabase.co';
+    const SUPABASE_KEY = 'TU_ANON_KEY';
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+    :root {
+      --bg:        #0A0F1E;
+      --bg2:       #111827;
+      --bg3:       #1a2235;
+      --card:      #141c2e;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #00E5A0;
+      --accent2:   #00B8FF;
+      --danger:    #FF4D6A;
+      --warn:      #FFB830;
+      --txt:       #F0F4FF;
+      --txt2:      #8899BB;
+      --txt3:      #4a5568;
+      --r:         16px;
+      --r2:        12px;
+      --safe-top:  env(safe-area-inset-top, 0px);
+      --safe-bot:  env(safe-area-inset-bottom, 0px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--txt);
+      font-family: 'DM Sans', sans-serif;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* ── APP SHELL ── */
+    #app {
+      display: flex; flex-direction: column;
+      height: 100%; width: 100%;
+      padding-top: var(--safe-top);
+      padding-bottom: var(--safe-bot);
+      position: relative;
+    }
+
+    /* ── SCREENS ── */
+    .screen {
+      display: none; flex-direction: column;
+      flex: 1; overflow: hidden;
+    }
+    .screen.active { display: flex; }
+
+    /* ── HEADER ── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 12px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .topbar-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 22px;
+      letter-spacing: -0.5px;
+    }
+    .topbar-logo span { color: var(--accent); }
+    .topbar-period {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px; color: var(--txt2);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* ── SCROLL AREA ── */
+    .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .scroll::-webkit-scrollbar { display: none; }
+    .pad { padding: 0 16px 24px; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      display: flex;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 10px 0 8px;
+      gap: 4px; cursor: pointer;
+      transition: opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .nav-item .nav-icon { font-size: 22px; line-height: 1; }
+    .nav-item .nav-label { font-size: 10px; color: var(--txt3); letter-spacing: 0.3px; }
+    .nav-item.active .nav-label { color: var(--accent); }
+    .nav-item.active .nav-icon { filter: drop-shadow(0 0 6px var(--accent)); }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed; bottom: calc(72px + var(--safe-bot)); right: 20px;
+      width: 58px; height: 58px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 4px 24px rgba(0,229,160,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+      z-index: 100;
+    }
+    .fab:active { transform: scale(0.93); box-shadow: 0 2px 12px rgba(0,229,160,0.3); }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+    }
+    .card + .card { margin-top: 10px; }
+
+    /* ── DASHBOARD ── */
+    .period-header {
+      padding: 20px 16px 8px;
+    }
+    .period-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px; font-weight: 600;
+      color: var(--txt2); letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 2px;
+    }
+    .period-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px; font-weight: 800;
+    }
+
+    .result-card {
+      margin: 0 16px 10px;
+      border-radius: var(--r);
+      padding: 22px 20px;
+      position: relative; overflow: hidden;
+    }
+    .result-card.pagar {
+      background: linear-gradient(135deg, #2a0f18, #1a0810);
+      border: 1px solid rgba(255,77,106,0.3);
+    }
+    .result-card.favor {
+      background: linear-gradient(135deg, #062518, #041510);
+      border: 1px solid rgba(0,229,160,0.3);
+    }
+    .result-card::before {
+      content: ''; position: absolute; top: -30px; right: -30px;
+      width: 120px; height: 120px; border-radius: 50%;
+      opacity: 0.08;
+    }
+    .result-card.pagar::before { background: var(--danger); }
+    .result-card.favor::before { background: var(--accent); }
+    .result-label {
+      font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+      font-weight: 600; margin-bottom: 6px;
+    }
+    .result-card.pagar .result-label { color: var(--danger); }
+    .result-card.favor .result-label { color: var(--accent); }
+    .result-amount {
+      font-family: 'Syne', sans-serif;
+      font-size: 32px; font-weight: 800; letter-spacing: -1.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .result-sub { font-size: 12px; color: var(--txt2); margin-top: 4px; }
+
+    .stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; padding: 0 16px; margin-bottom: 10px;
+    }
+    .stat-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r2);
+      padding: 14px;
+    }
+    .stat-box .stat-label {
+      font-size: 11px; color: var(--txt2);
+      letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .stat-box .stat-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px; font-weight: 700;
+      letter-spacing: -0.5px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-box .stat-val.green { color: var(--accent); }
+    .stat-box .stat-val.red   { color: var(--danger); }
+    .stat-box .stat-val.blue  { color: var(--accent2); }
+    .stat-box .stat-val.warn  { color: var(--warn); }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--txt2); margin: 20px 16px 10px;
+    }
+
+    /* ── COMPROBANTE LIST ── */
+    .comp-item {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r2);
+      padding: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .comp-item:active { background: var(--bg3); }
+    .comp-item + .comp-item { margin-top: 8px; }
+
+    .comp-thumb {
+      width: 46px; height: 46px; border-radius: 8px;
+      background: var(--bg3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+      overflow: hidden;
+    }
+    .comp-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .comp-info { flex: 1; min-width: 0; }
+    .comp-name { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .comp-meta { font-size: 12px; color: var(--txt2); margin-top: 2px; }
+    .comp-amount { text-align: right; flex-shrink: 0; }
+    .comp-amount .amount { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; }
+    .comp-amount .iva-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 10px;
+      margin-top: 3px; display: inline-block;
+    }
+    .iva-badge.c10 { background: rgba(0,229,160,0.15); color: var(--accent); }
+    .iva-badge.c5  { background: rgba(0,184,255,0.15); color: var(--accent2); }
+    .iva-badge.rev { background: rgba(255,184,48,0.15); color: var(--warn); }
+
+    /* ── ESTADO BADGE ── */
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      display: inline-block; margin-right: 5px;
+    }
+    .status-dot.ok { background: var(--accent); }
+    .status-dot.warn { background: var(--warn); }
+    .status-dot.err  { background: var(--danger); }
+
+    /* ── MODAL UPLOAD ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200; align-items: flex-end;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet {
+      width: 100%; background: var(--bg2);
+      border-radius: 24px 24px 0 0;
+      padding: 12px 20px calc(24px + var(--safe-bot));
+      animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .sheet-handle {
+      width: 40px; height: 4px; border-radius: 2px;
+      background: var(--txt3); margin: 0 auto 20px;
+    }
+    .sheet-title {
+      font-family: 'Syne', sans-serif; font-weight: 800;
+      font-size: 20px; margin-bottom: 6px;
+    }
+    .sheet-sub { font-size: 14px; color: var(--txt2); margin-bottom: 24px; }
+
+    .upload-options { display: flex; gap: 12px; }
+    .upload-btn {
+      flex: 1; border: none; border-radius: var(--r);
+      padding: 18px 12px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      transition: transform 0.15s;
+    }
+    .upload-btn:active { transform: scale(0.96); }
+    .upload-btn.camera { background: linear-gradient(135deg, var(--accent), #00c87a); }
+    .upload-btn.gallery { background: var(--bg3); border: 1px solid var(--border); }
+    .upload-btn .ub-icon { font-size: 30px; }
+    .upload-btn .ub-label { font-weight: 600; font-size: 13px; color: var(--bg); }
+    .upload-btn.gallery .ub-label { color: var(--txt); }
+
+    /* ── PROCESANDO MODAL ── */
+    .processing-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 300; align-items: center; justify-content: center;
+      flex-direction: column; gap: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .processing-modal.open { display: flex; }
+    .processing-icon { font-size: 48px; animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { transform: scale(1); opacity:1; } 50% { transform: scale(1.1); opacity:0.8; } }
+    .processing-title {
+      font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+    }
+    .processing-step { font-size: 14px; color: var(--txt2); }
+    .progress-bar {
+      width: 200px; height: 3px; background: var(--bg3);
+      border-radius: 2px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px; width: 0%; transition: width 0.5s ease;
+    }
+
+    /* ── RESULTADO EXTRACCIÓN ── */
+    .result-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 400;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .result-modal.open { display: flex; }
+    .result-header {
+      padding: calc(var(--safe-top) + 16px) 20px 16px;
+      display: flex; align-items: center; gap: 14px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .back-btn {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--bg3); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--txt);
+    }
+    .result-header-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; }
+
+    .confidence-bar-wrap { padding: 16px 20px 0; }
+    .conf-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .conf-label { font-size: 13px; color: var(--txt2); }
+    .conf-val { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; }
+    .conf-track { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+    .conf-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+
+    .preview-img {
+      margin: 16px 20px 0;
+      border-radius: var(--r); overflow: hidden;
+      max-height: 200px; background: var(--bg3);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .preview-img img { width: 100%; height: 100%; object-fit: contain; }
+    .preview-placeholder { font-size: 40px; padding: 40px; }
+
+    .field-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+    .field-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--r2); padding: 12px 14px;
+    }
+    .field-row.dubious { border-color: rgba(255,184,48,0.4); background: rgba(255,184,48,0.05); }
+    .field-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .field-content { flex: 1; min-width: 0; }
+    .field-name { font-size: 11px; color: var(--txt2); letter-spacing: 0.5px; margin-bottom: 3px; }
+    .field-val {
+      font-family: 'Syne', sans-serif; font-weight: 600; font-size: 15px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      letter-spacing: -0.3px;
+      font-variant-numeric: tabular-nums;
+    }
+    .field-edit { font-size: 16px; cursor: pointer; color: var(--txt2); flex-shrink: 0; }
+
+    .action-row {
+      display: flex; gap: 10px;
+      padding: 0 20px 20px;
+      flex-shrink: 0;
+    }
+    .btn-confirm {
+      flex: 2; background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: var(--r); padding: 16px;
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px;
+      color: var(--bg); cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .btn-confirm:active { transform: scale(0.97); }
+    .btn-discard {
+      flex: 1; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 16px;
+      font-weight: 600; font-size: 14px; color: var(--txt2);
+      cursor: pointer;
+    }
+
+    /* ── COMPROBANTES SCREEN ── */
+    .filter-row {
+      display: flex; gap: 8px; padding: 14px 16px 10px;
+      overflow-x: auto; flex-shrink: 0;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+      white-space: nowrap; cursor: pointer; flex-shrink: 0;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--txt2); transition: all 0.15s;
+    }
+    .filter-chip.active {
+      background: var(--accent); border-color: var(--accent); color: var(--bg);
+    }
+
+    /* ── REPORTES SCREEN ── */
+    .report-month {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .rm-left h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; }
+    .rm-left p  { font-size: 12px; color: var(--txt2); margin-top: 2px; }
+    .rm-badge {
+      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .rm-badge.pagado  { background: rgba(0,229,160,0.15); color: var(--accent); }
+    .rm-badge.pendiente { background: rgba(255,184,48,0.15); color: var(--warn); }
+    .rm-badge.favor   { background: rgba(0,184,255,0.15); color: var(--accent2); }
+
+    /* ── PERFIL SCREEN ── */
+    .profile-header {
+      padding: 24px 20px 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+    .profile-name { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; }
+    .profile-ruc  { font-size: 14px; color: var(--txt2); }
+
+    .setting-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .setting-item .s-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--bg3); display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .setting-item .s-label { flex: 1; font-size: 15px; }
+    .setting-item .s-arrow { color: var(--txt3); font-size: 18px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; top: calc(var(--safe-top) + 16px); left: 50%;
+      transform: translateX(-50%) translateY(-120px);
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 30px; padding: 10px 20px;
+      font-size: 14px; font-weight: 500;
+      z-index: 999; white-space: nowrap;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 30px; gap: 12px;
+    }
+    .empty-icon { font-size: 48px; opacity: 0.4; }
+    .empty-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; text-align: center; color: var(--txt2); }
+    .empty-sub { font-size: 14px; color: var(--txt3); text-align: center; }
+
+    /* ── INPUT OVERRIDE ── */
+    input[type=file] { display: none; }
+
+    /* ── EDIT FIELD MODAL ── */
+    .edit-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8); z-index: 500;
+      align-items: flex-end;
+    }
+    .edit-modal.open { display: flex; }
+    .edit-sheet {
+      width: 100%; background: var(--bg2);
+      border-radius: 24px 24px 0 0;
+      padding: 20px 20px calc(20px + var(--safe-bot));
+      animation: slideUp 0.25s ease;
+    }
+    .edit-label { font-size: 12px; color: var(--txt2); margin-bottom: 8px; letter-spacing: 0.5px; }
+    .edit-input {
+      width: 100%; background: var(--bg3);
+      border: 1px solid var(--border); border-radius: var(--r2);
+      padding: 14px 16px; font-size: 16px; color: var(--txt);
+      font-family: 'Syne', sans-serif; font-weight: 600;
+      outline: none; transition: border-color 0.15s;
+    }
+    .edit-input:focus { border-color: var(--accent); }
+    .edit-save {
+      width: 100%; margin-top: 12px;
+      background: var(--accent); border: none; border-radius: var(--r2);
+      padding: 14px; font-weight: 700; font-size: 15px; color: var(--bg);
+      cursor: pointer; font-family: 'Syne', sans-serif;
+    }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.3s ease forwards; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ════════════════════════════════════════
+       SCREEN: DASHBOARD
+  ════════════════════════════════════════ -->
+  <div class="screen active" id="screen-dashboard">
+    <div class="topbar">
+      <div class="topbar-logo">Tax<span>PY</span></div>
+      <div class="topbar-period" onclick="showPeriodPicker()">
+        📅 <span id="period-label">Mayo 2025</span> ›
+      </div>
+    </div>
+
+    <div class="scroll">
+      <div class="period-header">
+        <h2>Liquidación Mensual</h2>
+        <h1 id="dash-periodo">Mayo 2025</h1>
+      </div>
+
+      <!-- Resultado principal -->
+      <div class="result-card pagar" id="result-main">
+        <div class="result-label" id="result-type-label">⚠️ MONTO A PAGAR</div>
+        <div class="result-amount" id="result-amount">₲ 0</div>
+        <div class="result-sub" id="result-sub">IVA Débito − IVA Crédito − Saldo anterior</div>
+      </div>
+
+      <!-- Stats grid -->
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">📈 IVA Débito</div>
+          <div class="stat-val red" id="stat-debito">₲ 0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">📉 IVA Crédito</div>
+          <div class="stat-val green" id="stat-credito">₲ 0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">🔄 Saldo Anterior</div>
+          <div class="stat-val blue" id="stat-saldo-anterior">₲ 0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">🧾 Comprobantes</div>
+          <div class="stat-val warn" id="stat-comprobantes">0</div>
+        </div>
+      </div>
+
+      <!-- Desglose IVA -->
+      <div class="section-title">Desglose IVA</div>
+      <div style="padding: 0 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 11px; color: var(--txt2); margin-bottom: 2px;">Crédito Fiscal 10%</div>
+            <div style="font-family: 'Syne', sans-serif; font-weight: 700;" id="dash-cf10">₲ 0</div>
+          </div>
+          <div style="background: rgba(0,229,160,0.12); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">10%</div>
+        </div>
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 11px; color: var(--txt2); margin-bottom: 2px;">Crédito Fiscal 5%</div>
+            <div style="font-family: 'Syne', sans-serif; font-weight: 700;" id="dash-cf5">₲ 0</div>
+          </div>
+          <div style="background: rgba(0,184,255,0.12); color: var(--accent2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">5%</div>
+        </div>
+      </div>
+
+      <!-- Últimos comprobantes -->
+      <div class="section-title">Últimos Comprobantes</div>
+      <div style="padding: 0 16px;" id="recent-list">
+        <div class="empty-state">
+          <div class="empty-icon">📄</div>
+          <div class="empty-title">Sin comprobantes</div>
+          <div class="empty-sub">Presioná el botón + para subir tu primera factura</div>
+        </div>
+      </div>
+      <div style="height: 80px;"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN: COMPROBANTES
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-comprobantes">
+    <div class="topbar">
+      <div class="topbar-logo">Tax<span>PY</span></div>
+      <div style="font-size: 13px; color: var(--txt2);" id="comp-count-label">0 comprobantes</div>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-chip active" onclick="filterComps(this,'todos')">Todos</div>
+      <div class="filter-chip" onclick="filterComps(this,'compra')">Compras</div>
+      <div class="filter-chip" onclick="filterComps(this,'venta')">Ventas</div>
+      <div class="filter-chip" onclick="filterComps(this,'pendiente_revision')">⚠️ Revisar</div>
+      <div class="filter-chip" onclick="filterComps(this,'confirmado')">✅ Confirmados</div>
+    </div>
+
+    <div class="scroll pad" id="comp-list">
+      <div class="empty-state">
+        <div class="empty-icon">🗂️</div>
+        <div class="empty-title">No hay comprobantes</div>
+        <div class="empty-sub">Usá el botón + para agregar facturas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN: REPORTES
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-reportes">
+    <div class="topbar">
+      <div class="topbar-logo">Tax<span>PY</span></div>
+      <div style="font-size: 13px; color: var(--txt2);">Historial</div>
+    </div>
+    <div class="scroll" id="reportes-list">
+      <div class="section-title" style="padding-top: 16px;">Liquidaciones Mensuales</div>
+      <!-- generado dinámicamente -->
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN: PERFIL
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-perfil">
+    <div class="topbar">
+      <div class="topbar-logo">Tax<span>PY</span></div>
+    </div>
+    <div class="scroll">
+      <div class="profile-header">
+        <div class="avatar">👤</div>
+        <div class="profile-name" id="p-name">Mi Empresa</div>
+        <div class="profile-ruc" id="p-ruc">RUC: 80012345-6</div>
+      </div>
+
+      <div onclick="editProfile('Razón Social', 'razon_social')">
+        <div class="setting-item">
+          <div class="s-icon">🏢</div>
+          <div class="s-label">Razón Social</div>
+          <div class="s-arrow">›</div>
+        </div>
+      </div>
+      <div onclick="editProfile('RUC', 'ruc')">
+        <div class="setting-item">
+          <div class="s-icon">🔢</div>
+          <div class="s-label">RUC</div>
+          <div class="s-arrow">›</div>
+        </div>
+      </div>
+      <div onclick="editProfile('Actividad Económica', 'actividad')">
+        <div class="setting-item">
+          <div class="s-icon">💼</div>
+          <div class="s-label">Actividad Económica</div>
+          <div class="s-arrow">›</div>
+        </div>
+      </div>
+
+      <div class="section-title" style="padding-top: 4px;">Configuración</div>
+
+      <div onclick="editProfile('API Key Claude', 'claude_key')">
+        <div class="setting-item">
+          <div class="s-icon">🤖</div>
+          <div class="s-label">API Key Claude (OCR)</div>
+          <div class="s-arrow">›</div>
+        </div>
+      </div>
+      <div onclick="setSaldoInicial()">
+        <div class="setting-item">
+          <div class="s-icon">💰</div>
+          <div class="s-label">Saldo a Favor Inicial</div>
+          <div class="s-arrow">›</div>
+        </div>
+      </div>
+      <div onclick="exportarDatos()">
+        <div class="setting-item">
+          <div class="s-icon">📤</div>
+          <div class="s-label">Exportar datos CSV</div>
+          <div class="s-arrow">›</div>
+        </div>
+      </div>
+      <div onclick="limpiarDatos()">
+        <div class="setting-item">
+          <div class="s-icon">🗑️</div>
+          <div class="s-label" style="color: var(--danger);">Limpiar todos los datos</div>
+          <div class="s-arrow">›</div>
+        </div>
+      </div>
+
+      <div style="padding: 24px 20px; text-align: center; color: var(--txt3); font-size: 12px;">
+        TaxPY v1.0.0 — Paraguay 🇵🇾<br>
+        Optimizado para comprobantes SET
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       BOTTOM NAVIGATION
+  ════════════════════════════════════════ -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="goScreen('dashboard',this)">
+      <div class="nav-icon">📊</div>
+      <div class="nav-label">Dashboard</div>
+    </div>
+    <div class="nav-item" onclick="goScreen('comprobantes',this)">
+      <div class="nav-icon">🧾</div>
+      <div class="nav-label">Facturas</div>
+    </div>
+    <div class="nav-item" style="visibility:hidden; pointer-events: none;"></div>
+    <div class="nav-item" onclick="goScreen('reportes',this)">
+      <div class="nav-icon">📈</div>
+      <div class="nav-label">Reportes</div>
+    </div>
+    <div class="nav-item" onclick="goScreen('perfil',this)">
+      <div class="nav-icon">👤</div>
+      <div class="nav-label">Perfil</div>
+    </div>
+  </nav>
+
+  <!-- FAB -->
+  <button class="fab" onclick="openUploadSheet()">＋</button>
+
+</div>
+
+<!-- ════════════════════════════════════════
+     MODALS
+════════════════════════════════════════ -->
+
+<!-- Upload Sheet -->
+<div class="modal-overlay" id="upload-sheet" onclick="closeUpload(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Agregar Comprobante</div>
+    <div class="sheet-sub">El sistema leerá la factura automáticamente</div>
+    <div class="upload-options">
+      <button class="upload-btn camera" onclick="openCamera()">
+        <div class="ub-icon">📷</div>
+        <div class="ub-label">Tomar foto</div>
+      </button>
+      <button class="upload-btn gallery" onclick="openGallery()">
+        <div class="ub-icon">🖼️</div>
+        <div class="ub-label" style="color: var(--txt);">Galería</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Inputs ocultos -->
+<input type="file" id="input-camera"  accept="image/*" capture="environment" onchange="handleFile(this)">
+<input type="file" id="input-gallery" accept="image/*" onchange="handleFile(this)">
+
+<!-- Processing -->
+<div class="processing-modal" id="processing-modal">
+  <div class="processing-icon">🤖</div>
+  <div class="processing-title">Analizando factura...</div>
+  <div class="processing-step" id="proc-step">Leyendo imagen</div>
+  <div class="progress-bar"><div class="progress-fill" id="proc-bar"></div></div>
+</div>
+
+<!-- Result Modal -->
+<div class="result-modal" id="result-modal">
+  <div class="result-header">
+    <button class="back-btn" onclick="discardResult()">‹</button>
+    <div class="result-header-title">Verificar Comprobante</div>
+  </div>
+
+  <div class="confidence-bar-wrap">
+    <div class="conf-row">
+      <span class="conf-label">Confianza de extracción</span>
+      <span class="conf-val" id="conf-val-text">0%</span>
+    </div>
+    <div class="conf-track">
+      <div class="conf-fill" id="conf-fill"></div>
+    </div>
+  </div>
+
+  <div class="preview-img" id="preview-img">
+    <div class="preview-placeholder">🖼️</div>
+  </div>
+
+  <div class="field-list" id="field-list">
+    <!-- Generado dinámicamente -->
+  </div>
+
+  <div style="padding: 0 20px 10px; font-size: 12px; color: var(--txt2);" id="dubious-note"></div>
+
+  <div class="action-row">
+    <button class="btn-confirm" onclick="confirmComprobante()">✅ Confirmar y Guardar</button>
+    <button class="btn-discard" onclick="discardResult()">Descartar</button>
+  </div>
+  <div style="height: 16px;"></div>
+</div>
+
+<!-- Edit Field Modal -->
+<div class="edit-modal" id="edit-modal" onclick="closeEdit(event)">
+  <div class="edit-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle" style="margin-bottom: 16px;"></div>
+    <div class="edit-label" id="edit-field-label">Campo</div>
+    <input class="edit-input" id="edit-field-input" type="text" />
+    <button class="edit-save" onclick="saveEdit()">Guardar</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">Guardado</span>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let state = {
+  currentScreen: 'dashboard',
+  currentPeriod: getCurrentPeriod(),
+  comprobantes: [],
+  liquidaciones: {},
+  profile: {
+    razon_social: 'Mi Empresa S.A.',
+    ruc: '80012345-6',
+    actividad: 'Comercio al por menor',
+    claude_key: '',
+    saldo_inicial: 0
+  },
+  pendingResult: null,
+  pendingImageBase64: null,
+  pendingImageUrl: null,
+  editingField: null
+};
+
+function getCurrentPeriod() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+}
+
+function formatPeriod(p) {
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const [y, m] = p.split('-');
+  return `${meses[parseInt(m)-1]} ${y}`;
+}
+
+function formatGs(n) {
+  if (!n || n === 0) return '₲\u20090';
+  const abs = Math.abs(parseInt(n));
+  // Formato con separador de miles usando punto (estándar PY)
+  const formatted = abs.toLocaleString('es-PY');
+  return '₲\u2009' + formatted;
+}
+
+// ════════════════════════════════════════════════
+// PERSIST — Supabase
+// ════════════════════════════════════════════════
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Perfil sigue en localStorage (es solo configuración local)
+function saveProfile() {
+  localStorage.setItem('taxpy_profile', JSON.stringify(state.profile));
+}
+function loadProfile() {
+  try {
+    const p = localStorage.getItem('taxpy_profile');
+    if (p) state.profile = { ...state.profile, ...JSON.parse(p) };
+  } catch(e) {}
+}
+
+// save() = guardar liquidación del período actual en Supabase
+async function save() {
+  saveProfile();
+  const periodo = state.currentPeriod;
+  const liq = state.liquidaciones[periodo];
+  if (liq) {
+    await db.from('liquidaciones_mensuales').upsert({
+      periodo: liq.periodo,
+      iva_debito_10: liq.iva_debito_10 || 0,
+      iva_debito_5: liq.iva_debito_5 || 0,
+      total_iva_debito: liq.total_iva_debito || 0,
+      iva_credito_10: liq.iva_credito_10 || 0,
+      iva_credito_5: liq.iva_credito_5 || 0,
+      total_iva_credito: liq.total_iva_credito || 0,
+      saldo_favor_anterior: liq.saldo_favor_anterior || 0,
+      monto_a_pagar: liq.monto_a_pagar || 0,
+      saldo_a_favor: liq.saldo_a_favor || 0,
+      total_comprobantes: liq.total_comprobantes || 0,
+      updated_at: new Date().toISOString()
+    });
+  }
+}
+
+// load() = traer comprobantes y liquidaciones desde Supabase
+async function load() {
+  loadProfile();
+  try {
+    const { data: comps } = await db
+      .from('comprobantes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    state.comprobantes = comps || [];
+
+    const { data: liqs } = await db
+      .from('liquidaciones_mensuales')
+      .select('*');
+    state.liquidaciones = {};
+    (liqs || []).forEach(l => { state.liquidaciones[l.periodo] = l; });
+  } catch(e) {
+    console.warn('Supabase no disponible, sin datos:', e);
+  }
+}
+
+// ════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════
+function goScreen(name, navEl) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  state.currentScreen = name;
+
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'comprobantes') renderComprobantes('todos');
+  if (name === 'reportes') renderReportes();
+  if (name === 'perfil') renderPerfil();
+}
+
+// ════════════════════════════════════════════════
+// UPLOAD & OCR
+// ════════════════════════════════════════════════
+function openUploadSheet() {
+  document.getElementById('upload-sheet').classList.add('open');
+}
+
+function closeUpload(e) {
+  document.getElementById('upload-sheet').classList.remove('open');
+}
+
+function openCamera() {
+  document.getElementById('upload-sheet').classList.remove('open');
+  document.getElementById('input-camera').click();
+}
+
+function openGallery() {
+  document.getElementById('upload-sheet').classList.remove('open');
+  document.getElementById('input-gallery').click();
+}
+
+async function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    const dataUrl = e.target.result;
+    state.pendingImageBase64 = base64;  // para subir a Storage
+    await processImage(base64, dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function processImage(base64, dataUrl) {
+  showProcessing(true);
+
+  // Check API key (Claude / Anthropic)
+  const apiKey = state.profile.claude_key;
+  if (!apiKey) {
+    showProcessing(false);
+    // Demo mode: generar datos de prueba realistas
+    await demoExtraction(dataUrl);
+    return;
+  }
+
+  try {
+    setStep('Enviando imagen al motor IA...', 20);
+    await sleep(400);
+    setStep('Claude analizando factura...', 45);
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: 'image/jpeg', data: base64 }
+            },
+            {
+              type: 'text',
+              text: `Sos experto en comprobantes paraguayos (SET/SIFEN). Tu única tarea es LEER y TRANSCRIBIR valores que estén EXPLÍCITAMENTE impresos en la factura. NUNCA calcules, inferías, ni completes campos por tu cuenta.
+
+═══ REGLAS ABSOLUTAS ═══
+
+REGLA 1 — SOLO LEER, NUNCA CALCULAR:
+Cada campo numérico (iva_10, iva_5, exentas, gravado_10, gravado_5, total) debe ser un número que aparece IMPRESO en la factura.
+Si NO aparece impreso → devolvé null. No lo calcules. No lo estimes. null.
+
+REGLA 2 — IVA: CERO INFERENCIA:
+- iva_10: solo si hay un campo explícito "IVA 10%" o "IVA incluido 10%" impreso. Si no existe → null.
+- iva_5:  solo si hay un campo explícito "IVA 5%"  o "IVA incluido 5%"  impreso. Si no existe → null.
+- JAMÁS calcules IVA desde gravado/11 ni gravado/21. Eso no es tu trabajo.
+
+REGLA 3 — CAMPOS DUDOSOS:
+Marcá en campos_dudosos CUALQUIER valor que:
+- no pudiste leer con certeza (imagen borrosa, tachado, ilegible)
+- tuviste que interpretar o asumir
+- no está en un campo claramente etiquetado
+
+REGLA 4 — total_iva_explicito:
+- true  → hay campo "TOTAL IVA" o "IVA INCLUIDO" impreso con valor numérico claro
+- false → no hay tal campo en la factura
+
+REGLA 5 — CUADRE (solo informativo, no corrijas):
+Calculá internamente: gravado_10 + gravado_5 + exentas == total (si todos son no-null).
+Si NO cuadra → agregá "CUADRE_FALLIDO" a campos_dudosos y explicá en notas.
+NO modifiques ningún campo para que cuadre.
+
+REGLA 6 — TIMBRADO Y RUC:
+- timbrado: exactamente 8 dígitos numéricos o null
+- ruc_proveedor: formato NNNNNNN-D o null
+
+═══ RESPONDE SOLO JSON VÁLIDO SIN MARKDOWN ═══
+{
+  "fecha_emision": "YYYY-MM-DD o null",
+  "proveedor": "nombre o null",
+  "ruc_proveedor": "XXXXXXX-D o null",
+  "timbrado": "8digitos o null",
+  "numero_factura": "NNN-NNN-NNNNNNN o null",
+  "gravado_10": null,
+  "gravado_5": null,
+  "subtotal": null,
+  "iva_10": null,
+  "iva_5": null,
+  "exentas": null,
+  "total": null,
+  "total_iva_explicito": false,
+  "tipo_comprobante": "compra",
+  "es_credito_fiscal": true,
+  "confianza": 0.9,
+  "campos_dudosos": [],
+  "notas": ""
+}`
+            }
+          ]
+        }]
+      })
+    });
+
+    setStep('Estructurando datos tributarios...', 75);
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+
+    let extracted;
+    try {
+      extracted = JSON.parse(text.replace(/```json|```/g, '').trim());
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      extracted = match ? JSON.parse(match[0]) : null;
+    }
+
+    setStep('Calculando IVA...', 90);
+    await sleep(300);
+    showProcessing(false);
+
+    if (extracted) {
+      extracted = normalizarIVAParaguayo(extracted);
+      showResult(extracted, dataUrl);
+    } else {
+      await demoExtraction(dataUrl);
+    }
+  } catch(err) {
+    showProcessing(false);
+    await demoExtraction(dataUrl);
+  }
+}
+
+// ════════════════════════════════════════════════
+// NORMALIZADOR IVA PARAGUAYO — MODO ESTRICTO
+// Solo limpia tipos. JAMÁS calcula ni infiere valores.
+// ════════════════════════════════════════════════
+function normalizarIVAParaguayo(d) {
+  const r = { ...d };
+  if (!r.campos_dudosos) r.campos_dudosos = [];
+
+  // Parsear un valor: si es null/undefined/"null"/"" → null. Si es número → entero positivo.
+  const parse = (v) => {
+    if (v === null || v === undefined || v === '' || v === 'null') return null;
+    const n = Math.round(Math.abs(parseInt(String(v).replace(/[^0-9]/g, ''))));
+    return isNaN(n) ? null : n;
+  };
+
+  // Aplicar parse a todos los campos numéricos — sin modificar lógica
+  r.gravado_10 = parse(r.gravado_10);
+  r.gravado_5  = parse(r.gravado_5);
+  r.subtotal   = parse(r.subtotal);
+  r.iva_10     = parse(r.iva_10);
+  r.iva_5      = parse(r.iva_5);
+  r.exentas    = parse(r.exentas);
+  r.total      = parse(r.total);
+
+  // ── VALIDACIÓN DE CUADRE (solo detectar, nunca corregir) ──
+  // Fórmula SET: gravado_10 + gravado_5 + exentas = total
+  // (el IVA ya está incluido dentro de gravado_10 y gravado_5 en facturas paraguayas)
+  const g10  = r.gravado_10 ?? 0;
+  const g5   = r.gravado_5  ?? 0;
+  const exen = r.exentas    ?? 0;
+  const tot  = r.total;
+
+  const tienePartes  = r.gravado_10 !== null || r.gravado_5 !== null || r.exentas !== null;
+  const tieneTotal   = tot !== null && tot > 0;
+
+  if (tienePartes && tieneTotal) {
+    const sumaPartes = g10 + g5 + exen;
+    const diferencia = Math.abs(sumaPartes - tot);
+    const tolerancia = Math.max(10, Math.round(tot * 0.001)); // 0.1% tolerancia por redondeo
+    if (diferencia > tolerancia) {
+      if (!r.campos_dudosos.includes('CUADRE_FALLIDO')) {
+        r.campos_dudosos.push('CUADRE_FALLIDO');
+      }
+      r.notas = (r.notas ? r.notas + ' | ' : '') +
+        `Cuadre fallido: gravado_10(${g10}) + gravado_5(${g5}) + exentas(${exen}) = ${sumaPartes} ≠ total(${tot})`;
+      r._cuadre_fallido = true;
+    }
+  }
+
+  return r;
+}
+
+async function demoExtraction(dataUrl) {
+  // Datos demo realistas para demostración sin API key
+  showProcessing(true);
+  setStep('Modo demo — generando ejemplo...', 30);
+  await sleep(600);
+  setStep('Procesando comprobante...', 70);
+  await sleep(600);
+  showProcessing(false);
+
+  const demos = [
+    // Factura con IVA 10% explícito impreso, cuadre ok
+    { proveedor: 'Supermercado Stock S.A.', ruc_proveedor: '80012345-6', timbrado: '12345678',
+      numero_factura: '001-001-0001234', gravado_10: 450000, gravado_5: null,
+      subtotal: 450000, iva_10: 45000, iva_5: null,
+      exentas: 0, total: 495000, total_iva_explicito: true,
+      tipo_comprobante: 'compra', es_credito_fiscal: true,
+      confianza: 0.95, campos_dudosos: [] },
+    // Factura con IVA 5% explícito + exentas, cuadre ok
+    { proveedor: 'Farmacia Paraguay EIRL', ruc_proveedor: '5678901-2', timbrado: '87654321',
+      numero_factura: '001-002-0009876', gravado_10: null, gravado_5: 200000,
+      subtotal: null, iva_10: null, iva_5: 10000,
+      exentas: 150000, total: 360000, total_iva_explicito: true,
+      tipo_comprobante: 'compra', es_credito_fiscal: true,
+      confianza: 0.88, campos_dudosos: ['timbrado'] },
+    // Factura sin campos IVA explícitos → IVA null, requiere revisión
+    { proveedor: 'Servicios Digitales SRL', ruc_proveedor: '3456789-1', timbrado: '11223344',
+      numero_factura: '001-001-0005432', gravado_10: 800000, gravado_5: null,
+      subtotal: 800000, iva_10: null, iva_5: null,
+      exentas: null, total: 880000, total_iva_explicito: false,
+      tipo_comprobante: 'compra', es_credito_fiscal: true,
+      confianza: 0.72, campos_dudosos: ['iva_10'],
+      notas: 'IVA no impreso explícitamente en la factura — revisión manual requerida' },
+  ];
+
+  const demo = demos[Math.floor(Math.random() * demos.length)];
+  demo.fecha_emision = new Date().toISOString().split('T')[0];
+  demo.notas = (demo.notas ? demo.notas + ' | ' : '') + 'Modo demo — configure su API key para OCR real';
+  showResult(normalizarIVAParaguayo(demo), dataUrl);
+}
+
+// ════════════════════════════════════════════════
+// PROCESSING UI
+// ════════════════════════════════════════════════
+function showProcessing(show) {
+  const el = document.getElementById('processing-modal');
+  if (show) el.classList.add('open');
+  else el.classList.remove('open');
+  if (show) { document.getElementById('proc-bar').style.width = '0%'; }
+}
+
+function setStep(text, pct) {
+  document.getElementById('proc-step').textContent = text;
+  document.getElementById('proc-bar').style.width = pct + '%';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ════════════════════════════════════════════════
+// RESULT MODAL
+// ════════════════════════════════════════════════
+function showResult(data, imageDataUrl) {
+  state.pendingResult = data;
+  state.pendingImageUrl = imageDataUrl;
+
+  // Confidence bar
+  const conf = data.confianza || 0.5;
+  const confPct = Math.round(conf * 100);
+  document.getElementById('conf-val-text').textContent = confPct + '%';
+  const fill = document.getElementById('conf-fill');
+  fill.style.width = confPct + '%';
+  fill.style.background = conf >= 0.85
+    ? 'linear-gradient(90deg, #00E5A0, #00c87a)'
+    : conf >= 0.65
+    ? 'linear-gradient(90deg, #FFB830, #FF8C00)'
+    : 'linear-gradient(90deg, #FF4D6A, #cc0000)';
+
+  // Preview
+  const prev = document.getElementById('preview-img');
+  prev.innerHTML = imageDataUrl
+    ? `<img src="${imageDataUrl}" alt="Comprobante" />`
+    : '<div class="preview-placeholder">🖼️</div>';
+
+  // Fields
+  const fields = [
+    { icon: '📅', name: 'Fecha de emisión',   key: 'fecha_emision',   val: data.fecha_emision || '—' },
+    { icon: '🏢', name: 'Proveedor',          key: 'proveedor',       val: data.proveedor || '—' },
+    { icon: '🔢', name: 'RUC',                key: 'ruc_proveedor',   val: data.ruc_proveedor || '—' },
+    { icon: '🔖', name: 'Timbrado',           key: 'timbrado',        val: data.timbrado || '—' },
+    { icon: '🧾', name: 'Nro. Factura',       key: 'numero_factura',  val: data.numero_factura || '—' },
+    { icon: '💴', name: 'Subtotal',           key: 'subtotal',        val: data.subtotal  !== null && data.subtotal  !== undefined ? formatGs(data.subtotal)  : '—', numeric: true },
+    { icon: '🟢', name: 'IVA 10%',           key: 'iva_10',          val: data.iva_10    !== null && data.iva_10    !== undefined ? formatGs(data.iva_10)    : '—', numeric: true },
+    { icon: '🔵', name: 'IVA 5%',            key: 'iva_5',           val: data.iva_5     !== null && data.iva_5     !== undefined ? formatGs(data.iva_5)     : '—', numeric: true },
+    { icon: '⚪', name: 'Exentas',            key: 'exentas',         val: data.exentas   !== null && data.exentas   !== undefined ? formatGs(data.exentas)   : '—', numeric: true },
+    { icon: '💰', name: 'Total',              key: 'total',           val: data.total     !== null && data.total     !== undefined ? formatGs(data.total)     : '—', numeric: true },
+    { icon: '🏷️', name: 'Tipo',              key: 'tipo_comprobante',val: data.tipo_comprobante === 'compra' ? 'Compra' : data.tipo_comprobante === 'venta' ? 'Venta' : data.tipo_comprobante || 'Compra' },
+  ];
+
+  const dubious = data.campos_dudosos || [];
+  const list = document.getElementById('field-list');
+  list.innerHTML = fields.map(f => `
+    <div class="field-row ${dubious.includes(f.key) ? 'dubious' : ''}" id="frow-${f.key}">
+      <div class="field-icon">${f.icon}</div>
+      <div class="field-content">
+        <div class="field-name">${f.name}${dubious.includes(f.key) ? ' ⚠️' : ''}</div>
+        <div class="field-val" id="fval-${f.key}">${f.val}</div>
+      </div>
+      <div class="field-edit" onclick="editField('${f.key}','${f.name}')">✏️</div>
+    </div>
+  `).join('');
+
+  // Dubious note
+  const cuadreFallido = dubious.includes('CUADRE_FALLIDO');
+  const otrosDudosos  = dubious.filter(d => d !== 'CUADRE_FALLIDO');
+  let dubiousText = '';
+  if (cuadreFallido) {
+    dubiousText += `❌ Cuadre fallido — los valores no suman correctamente. Revisá manualmente.\n`;
+  }
+  if (otrosDudosos.length > 0) {
+    dubiousText += `⚠️ Revisar: ${otrosDudosos.map(d => fields.find(f=>f.key===d)?.name || d).join(', ')}`;
+  }
+  const noteEl = document.getElementById('dubious-note');
+  noteEl.textContent = dubiousText.trim();
+  noteEl.style.color = cuadreFallido ? 'var(--danger)' : 'var(--txt2)';
+
+  document.getElementById('result-modal').classList.add('open');
+}
+
+// ════════════════════════════════════════════════
+// EDIT FIELD
+// ════════════════════════════════════════════════
+function editField(key, label) {
+  state.editingField = key;
+  document.getElementById('edit-field-label').textContent = label;
+  const current = state.pendingResult[key];
+  document.getElementById('edit-field-input').value =
+    typeof current === 'number' ? current : (current || '');
+  document.getElementById('edit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('edit-field-input').focus(), 100);
+}
+
+function closeEdit(e) {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+
+function saveEdit() {
+  const key = state.editingField;
+  const val = document.getElementById('edit-field-input').value;
+  const numericKeys = ['subtotal','iva_10','iva_5','exentas','total'];
+  const stored = numericKeys.includes(key) ? parseInt(val.replace(/[^0-9]/g,'')) || 0 : val;
+  state.pendingResult[key] = stored;
+  // Update display
+  const el = document.getElementById(`fval-${key}`);
+  if (el) el.textContent = numericKeys.includes(key) ? formatGs(stored) : val;
+  // Remove from dubious
+  if (state.pendingResult.campos_dudosos) {
+    state.pendingResult.campos_dudosos = state.pendingResult.campos_dudosos.filter(d => d !== key);
+    document.getElementById(`frow-${key}`)?.classList.remove('dubious');
+  }
+  // Mark as user-corrected
+  state.pendingResult._corregido = true;
+  document.getElementById('edit-modal').classList.remove('open');
+}
+
+// ════════════════════════════════════════════════
+// CONFIRM / DISCARD
+// ════════════════════════════════════════════════
+async function confirmComprobante() {
+  const r = state.pendingResult;
+  const id = 'comp_' + Date.now();
+  const periodo = r.fecha_emision
+    ? r.fecha_emision.substring(0, 7)
+    : state.currentPeriod;
+
+  // Subir imagen a Supabase Storage si existe
+  let imagen_url = null;
+  if (state.pendingImageBase64) {
+    try {
+      const blob = await fetch('data:image/jpeg;base64,' + state.pendingImageBase64).then(r => r.blob());
+      const path = `${id}.jpg`;
+      const { data: uploadData } = await db.storage.from('comprobantes').upload(path, blob, { contentType: 'image/jpeg' });
+      if (uploadData) {
+        const { data: urlData } = db.storage.from('comprobantes').getPublicUrl(path);
+        imagen_url = urlData.publicUrl;
+      }
+    } catch(e) {
+      console.warn('Error subiendo imagen:', e);
+      imagen_url = state.pendingImageUrl; // fallback: data URL
+    }
+  } else {
+    imagen_url = state.pendingImageUrl;
+  }
+
+  const comp = {
+    id,
+    fecha_emision: r.fecha_emision || null,
+    proveedor: r.proveedor || null,
+    ruc_proveedor: r.ruc_proveedor || null,
+    timbrado: r.timbrado || null,
+    numero_factura: r.numero_factura || null,
+    subtotal: r.subtotal || 0,
+    iva_10: r.iva_10 || 0,
+    iva_5: r.iva_5 || 0,
+    exentas: r.exentas || 0,
+    total: r.total || 0,
+    tipo_comprobante: r.tipo_comprobante || 'compra',
+    es_credito_fiscal: r.es_credito_fiscal !== false,
+    confianza: r.confianza || 0,
+    campos_dudosos: r.campos_dudosos || [],
+    notas: r.notas || '',
+    imagen_url,
+    periodo_fiscal: periodo,
+    estado: (r._cuadre_fallido || r.campos_dudosos?.includes('CUADRE_FALLIDO') ||
+             r.campos_dudosos?.length > 0 || r.confianza < 0.75)
+             ? 'pendiente_revision' : 'confirmado',
+    corregido_por_usuario: !!r._corregido,
+    created_at: new Date().toISOString()
+  };
+
+  // Insertar en Supabase
+  const { error } = await db.from('comprobantes').insert(comp);
+  if (error) {
+    console.error('Error guardando comprobante:', error);
+    showToast('❌', 'Error al guardar');
+    return;
+  }
+
+  state.comprobantes.unshift(comp);
+  recalcularLiquidacion(periodo);
+  await save();
+
+  document.getElementById('result-modal').classList.remove('open');
+  state.pendingResult = null;
+  state.pendingImageUrl = null;
+  state.pendingImageBase64 = null;
+
+  renderDashboard();
+  showToast('✅', 'Comprobante guardado');
+}
+
+function discardResult() {
+  document.getElementById('result-modal').classList.remove('open');
+  state.pendingResult = null;
+  state.pendingImageUrl = null;
+}
+
+// ════════════════════════════════════════════════
+// LÓGICA TRIBUTARIA PARAGUAYA
+// ════════════════════════════════════════════════
+function recalcularLiquidacion(periodo) {
+  const compsPeriodo = state.comprobantes.filter(c =>
+    c.periodo_fiscal === periodo && c.estado !== 'rechazado'
+  );
+
+  const compras = compsPeriodo.filter(c => c.tipo_comprobante === 'compra');
+  const ventas  = compsPeriodo.filter(c => c.tipo_comprobante === 'venta');
+
+  // Crédito fiscal (de compras con crédito fiscal)
+  const cf = compras.filter(c => c.es_credito_fiscal);
+  const credito10 = cf.reduce((s, c) => s + (c.iva_10 || 0), 0);
+  const credito5  = cf.reduce((s, c) => s + (c.iva_5  || 0), 0);
+
+  // Débito fiscal (de ventas)
+  const debito10 = ventas.reduce((s, v) => s + (v.iva_10 || 0), 0);
+  const debito5  = ventas.reduce((s, v) => s + (v.iva_5  || 0), 0);
+
+  // Saldo anterior
+  const periodoAnterior = getPeriodoAnterior(periodo);
+  const liqAnterior = state.liquidaciones[periodoAnterior];
+  const saldoAnterior = liqAnterior?.saldo_a_favor || 0;
+
+  // Cálculo final
+  const totalDebito  = debito10 + debito5;
+  const totalCredito = credito10 + credito5;
+  const resultado = totalDebito - totalCredito - saldoAnterior;
+
+  state.liquidaciones[periodo] = {
+    periodo,
+    iva_debito_10: debito10,
+    iva_debito_5:  debito5,
+    total_iva_debito:  totalDebito,
+    iva_credito_10: credito10,
+    iva_credito_5:  credito5,
+    total_iva_credito: totalCredito,
+    saldo_favor_anterior: saldoAnterior,
+    monto_a_pagar: resultado > 0 ? resultado : 0,
+    saldo_a_favor: resultado < 0 ? Math.abs(resultado) : 0,
+    total_comprobantes: compsPeriodo.length,
+    updated_at: new Date().toISOString()
+  };
+
+  save();
+}
+
+function getPeriodoAnterior(p) {
+  const [y, m] = p.split('-').map(Number);
+  const d = new Date(y, m - 2);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+// ════════════════════════════════════════════════
+// RENDER DASHBOARD
+// ════════════════════════════════════════════════
+function renderDashboard() {
+  recalcularLiquidacion(state.currentPeriod);
+  const liq = state.liquidaciones[state.currentPeriod] || {};
+  const label = formatPeriod(state.currentPeriod);
+
+  document.getElementById('period-label').textContent = label;
+  document.getElementById('dash-periodo').textContent = label;
+
+  const pagar = liq.monto_a_pagar || 0;
+  const favor = liq.saldo_a_favor || 0;
+
+  const rc = document.getElementById('result-main');
+  if (pagar > 0) {
+    rc.className = 'result-card pagar';
+    document.getElementById('result-type-label').textContent = '⚠️ MONTO A PAGAR';
+    document.getElementById('result-amount').textContent = formatGs(pagar);
+    document.getElementById('result-sub').textContent = 'IVA Débito − IVA Crédito − Saldo anterior';
+  } else {
+    rc.className = 'result-card favor';
+    document.getElementById('result-type-label').textContent = '✅ SALDO A FAVOR';
+    document.getElementById('result-amount').textContent = formatGs(favor);
+    document.getElementById('result-sub').textContent = 'Se arrastra al próximo mes automáticamente';
+  }
+
+  document.getElementById('stat-debito').textContent = formatGs(liq.total_iva_debito || 0);
+  document.getElementById('stat-credito').textContent = formatGs(liq.total_iva_credito || 0);
+  document.getElementById('stat-saldo-anterior').textContent = formatGs(liq.saldo_favor_anterior || 0);
+  document.getElementById('stat-comprobantes').textContent = liq.total_comprobantes || 0;
+  document.getElementById('dash-cf10').textContent = formatGs(liq.iva_credito_10 || 0);
+  document.getElementById('dash-cf5').textContent  = formatGs(liq.iva_credito_5  || 0);
+
+  // Recientes
+  const recientes = state.comprobantes
+    .filter(c => c.periodo_fiscal === state.currentPeriod)
+    .slice(0, 5);
+
+  const listEl = document.getElementById('recent-list');
+  if (recientes.length === 0) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📄</div>
+        <div class="empty-title">Sin comprobantes este mes</div>
+        <div class="empty-sub">Presioná el botón + para agregar</div>
+      </div>`;
+  } else {
+    listEl.innerHTML = recientes.map(c => buildCompItem(c)).join('');
+  }
+}
+
+function buildCompItem(c) {
+  const ivaBadge = c.iva_10 > 0 && c.iva_5 > 0
+    ? '<span class="iva-badge c10">10%+5%</span>'
+    : c.iva_10 > 0
+    ? '<span class="iva-badge c10">10%</span>'
+    : c.iva_5 > 0
+    ? '<span class="iva-badge c5">5%</span>'
+    : '';
+
+  const stDot = c.estado === 'confirmado'
+    ? '<span class="status-dot ok"></span>'
+    : c.estado === 'pendiente_revision'
+    ? '<span class="status-dot warn"></span>'
+    : '<span class="status-dot err"></span>';
+
+  const thumb = c.imagen_url && c.imagen_url.startsWith('data:')
+    ? `<img src="${c.imagen_url}" alt="" />`
+    : '🧾';
+
+  return `
+    <div class="comp-item fade-in" onclick="verComprobante('${c.id}')">
+      <div class="comp-thumb">${thumb}</div>
+      <div class="comp-info">
+        <div class="comp-name">${c.proveedor || 'Sin nombre'}</div>
+        <div class="comp-meta">${stDot}${c.numero_factura || '—'} · ${c.fecha_emision || '—'}</div>
+      </div>
+      <div class="comp-amount">
+        <div class="amount">${formatGs(c.total)}</div>
+        ${ivaBadge}
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════
+// RENDER COMPROBANTES
+// ════════════════════════════════════════════════
+let currentFilter = 'todos';
+function filterComps(el, filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderComprobantes(filter);
+}
+
+function renderComprobantes(filter) {
+  let comps = [...state.comprobantes];
+  if (filter !== 'todos') comps = comps.filter(c => {
+    if (filter === 'pendiente_revision') return c.estado === 'pendiente_revision';
+    if (filter === 'confirmado')         return c.estado === 'confirmado';
+    return c.tipo_comprobante === filter;
+  });
+
+  document.getElementById('comp-count-label').textContent = `${comps.length} comprobante${comps.length !== 1 ? 's' : ''}`;
+
+  const list = document.getElementById('comp-list');
+  if (comps.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🗂️</div>
+      <div class="empty-title">Sin resultados</div>
+      <div class="empty-sub">Cambiá el filtro o agregá facturas</div></div>`;
+  } else {
+    list.innerHTML = comps.map(c => buildCompItem(c)).join('');
+  }
+}
+
+// ════════════════════════════════════════════════
+// RENDER REPORTES
+// ════════════════════════════════════════════════
+function renderReportes() {
+  const list = document.getElementById('reportes-list');
+  const periodos = getUltimosPeriodos(6);
+  list.innerHTML = '<div class="section-title" style="padding-top: 16px;">Liquidaciones Mensuales</div>';
+
+  periodos.forEach(p => {
+    const liq = state.liquidaciones[p] || {};
+    const pagar = liq.monto_a_pagar || 0;
+    const favor = liq.saldo_a_favor || 0;
+
+    let badgeClass = 'pendiente', badgeText = 'Pendiente';
+    if (pagar > 0) { badgeClass = 'pagado'; badgeText = `Pagar ${formatGs(pagar)}`; }
+    else if (favor > 0) { badgeClass = 'favor'; badgeText = `A favor ${formatGs(favor)}`; }
+
+    list.innerHTML += `
+      <div class="report-month" onclick="mostrarDetalleMes('${p}')">
+        <div class="rm-left">
+          <h3>${formatPeriod(p)}</h3>
+          <p>${liq.total_comprobantes || 0} comprobantes · Créd: ${formatGs(liq.total_iva_credito || 0)}</p>
+        </div>
+        <div class="rm-badge ${badgeClass}">${badgeText}</div>
+      </div>`;
+  });
+}
+
+function mostrarDetalleMes(periodo) {
+  recalcularLiquidacion(periodo);
+  const liq = state.liquidaciones[periodo] || {};
+  const lines = [
+    `Período: ${formatPeriod(periodo)}`,
+    `IVA Débito: ${formatGs(liq.total_iva_debito||0)}`,
+    `  - 10%: ${formatGs(liq.iva_debito_10||0)}`,
+    `  - 5%:  ${formatGs(liq.iva_debito_5||0)}`,
+    `IVA Crédito: ${formatGs(liq.total_iva_credito||0)}`,
+    `  - 10%: ${formatGs(liq.iva_credito_10||0)}`,
+    `  - 5%:  ${formatGs(liq.iva_credito_5||0)}`,
+    `Saldo anterior: ${formatGs(liq.saldo_favor_anterior||0)}`,
+    `─────────────────`,
+    liq.monto_a_pagar > 0
+      ? `A PAGAR: ${formatGs(liq.monto_a_pagar)}`
+      : `A FAVOR: ${formatGs(liq.saldo_a_favor||0)}`,
+  ].join('\n');
+  alert(lines);
+}
+
+function getUltimosPeriodos(n) {
+  const res = [];
+  const now = new Date();
+  for (let i = 0; i < n; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i);
+    res.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  return res;
+}
+
+// ════════════════════════════════════════════════
+// RENDER PERFIL
+// ════════════════════════════════════════════════
+function renderPerfil() {
+  document.getElementById('p-name').textContent = state.profile.razon_social || 'Mi Empresa';
+  document.getElementById('p-ruc').textContent = 'RUC: ' + (state.profile.ruc || '—');
+}
+
+function editProfile(label, key) {
+  state.editingField = `profile.${key}`;
+  document.getElementById('edit-field-label').textContent = label;
+  document.getElementById('edit-field-input').value = state.profile[key] || '';
+  document.getElementById('edit-field-input').type = key === 'claude_key' ? 'password' : 'text';
+  document.getElementById('edit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('edit-field-input').focus(), 100);
+}
+
+// Override saveEdit for profile
+const _origSaveEdit = saveEdit;
+window.saveEdit = function() {
+  if (state.editingField?.startsWith('profile.')) {
+    const key = state.editingField.replace('profile.', '');
+    state.profile[key] = document.getElementById('edit-field-input').value;
+    save();
+    document.getElementById('edit-modal').classList.remove('open');
+    document.getElementById('edit-field-input').type = 'text';
+    renderPerfil();
+    showToast('✅', 'Guardado');
+    return;
+  }
+  _origSaveEdit();
+};
+
+function setSaldoInicial() {
+  state.editingField = 'profile.saldo_inicial_raw';
+  document.getElementById('edit-field-label').textContent = 'Saldo a Favor Inicial (₲)';
+  document.getElementById('edit-field-input').value = state.profile.saldo_inicial || 0;
+  document.getElementById('edit-field-input').type = 'number';
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function verComprobante(id) {
+  const c = state.comprobantes.find(x => x.id === id);
+  if (!c) return;
+  showResult(c, c.imagen_url);
+}
+
+// ════════════════════════════════════════════════
+// PERIOD PICKER
+// ════════════════════════════════════════════════
+function showPeriodPicker() {
+  const periods = getUltimosPeriodos(12);
+  const opts = periods.map(p => `${formatPeriod(p)} (${p})`).join('\n');
+  const sel = prompt(`Seleccionar período:\n${periods.map((p,i)=>`${i+1}. ${formatPeriod(p)}`).join('\n')}\n\nIngresá el número:`);
+  if (sel) {
+    const idx = parseInt(sel) - 1;
+    if (idx >= 0 && idx < periods.length) {
+      state.currentPeriod = periods[idx];
+      renderDashboard();
+    }
+  }
+}
+
+// ════════════════════════════════════════════════
+// EXPORT / CLEAN
+// ════════════════════════════════════════════════
+function exportarDatos() {
+  const headers = 'fecha,proveedor,ruc,timbrado,factura,subtotal,iva_10,iva_5,exentas,total,tipo,periodo\n';
+  const rows = state.comprobantes.map(c =>
+    [c.fecha_emision,c.proveedor,c.ruc_proveedor,c.timbrado,c.numero_factura,
+     c.subtotal,c.iva_10,c.iva_5,c.exentas,c.total,c.tipo_comprobante,c.periodo_fiscal]
+    .join(',')
+  ).join('\n');
+
+  const blob = new Blob([headers + rows], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `taxpy_export_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast('📤', 'CSV descargado');
+}
+
+function limpiarDatos() {
+  if (confirm('¿Eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
+    state.comprobantes = [];
+    state.liquidaciones = {};
+    save();
+    renderDashboard();
+    showToast('🗑️', 'Datos eliminados');
+  }
+}
+
+// ════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════
+let toastTimer;
+function showToast(icon, msg) {
+  clearTimeout(toastTimer);
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
+(async () => {
+  await load();
+  renderDashboard();
+  renderPerfil();
+})();
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
